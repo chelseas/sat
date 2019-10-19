@@ -1,11 +1,16 @@
 # generate the constraints for the n queens puzzle
 import numpy as np
 import itertools as it
+import os
 
 class n_queens():
     def __init__(self, n):
         self.n = n
-        self.vars = np.array([i for i in range(n*n)]).reshape(n,n)
+        self.vars = np.array([i for i in range(1,n*n+1)]).reshape(n,n)
+
+    def encode(self, dir="/Users/Chelsea/scratch"):
+        self.generate_constraints()
+        self.print_file(dir)
 
     def generate_constraints(self):
         # todo: later make a SET of clauses, not just list
@@ -18,10 +23,21 @@ class n_queens():
         self.clauses = [item for sublist in clauses for item in sublist]
         return self.clauses
 
-    def print_file(self):
+    def print_file(self, dir):
         # write code to print file format
         # from clauses in self.clauses
-        pass
+        n = self.n
+        fname = os.path.join(dir, "n_queens_" + str(n) + ".txt")
+        with open(fname, "w") as f:
+            for i in range(4):
+                f.write("c\n")
+            info_line = "p cnf " + str(n*n) + " " + str(len(self.clauses)) + "\n"
+            f.write(info_line)
+            for clause in self.clauses:
+                stw = " ".join([str(j) for j in clause])
+                stw = stw + " 0\n" # newline character
+                f.write(stw)
+        print("Success! Problem written to: ", fname)
 
     def gen_row(self):
         n = self.n
