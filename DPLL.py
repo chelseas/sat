@@ -15,6 +15,7 @@ class DPLL():
     def run_solver(self, file):
         self.parse_input(file) # generates self.formula
         self.solve()
+        print("SATus is : ", self.SATus)
 
     def solve(self):
         SATus = status.WORKING
@@ -24,7 +25,6 @@ class DPLL():
         counter = 0
         keep_prop = False
         while SATus is status.WORKING:
-            import pdb; pdb.set_trace()
             if not keep_prop:
                 self.decide()
                 keep_prop = True
@@ -34,18 +34,20 @@ class DPLL():
                 keep_prop = var is not None
             counter +=1
             SATus = self.check_SATus() # backtracking is in here
-            print(self.model)
+        self.SATus = SATus
 
     def check_SATus(self):
         # check for SAT or UNSAT
-        import pdb; pdb.set_trace()
         SAT_poss = len(self.model) == self.nvars
         for clause in self.formula:
-            if all([(v in self.model) for v in clause]):
+            if all([self.in_model(v) for v in clause]):
                 # if all vars in clause are assigned
                 tval = self.eval_clause(clause)
                 if not tval: # if a clause is false
                     # see if we need to backtrack or FAIL
+                    if self.testing:
+                        print("model: ", self.model)
+                        print("failure in clause: ", clause)
                     SATus = self.try_backtrack()
                     return SATus
                 # else:
@@ -73,8 +75,6 @@ class DPLL():
             var = self.pick_unassigned()
             self.add_to_model(var)
             self.mark_decision(var)
-            if self.testing:
-                print("Decided:", var)
 
     def apply_unit_prop(self):
         for clause in self.formula:
@@ -96,6 +96,7 @@ class DPLL():
         return None # if there was nothing to propagate, report that
 
     def try_backtrack(self):
+        import pdb; pdb.set_trace()
         if len(self.decisions) == 0:
             return status.UNSAT
         else:
@@ -107,6 +108,9 @@ class DPLL():
         d_ind = self.model.index(last_dec_var) # get index in model
         self.model = self.model[:d_ind] # keep part of model before last decision
         self.model.append(-last_dec_var) # change decision
+        if self.testing:
+            print("Backtracked. Changed ", last_dec_var, " to ", -last_dec_var,
+                  ". Discarded ", self.nvars - d_ind - 1, " values.")
 
     def eval_clause(self, clause):
         # only for clauses or sub clauses which are fully defined in the model
@@ -147,6 +151,8 @@ class DPLL():
 
     def mark_decision(self, var):
         self.decisions.append(var)
+        if self.testing:
+            print("decisions: ", self.decisions)
 
     def add_to_model(self, variable):
         self.model.append(variable)
