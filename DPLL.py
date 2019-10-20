@@ -1,4 +1,5 @@
 from enum import Enum
+import numpy as np
 
 class status(Enum):
     SAT = 1
@@ -16,28 +17,52 @@ class DPLL():
 
     def solve(self):
         SATus = status.WORKING
-        funs = [self.apply_pure_literal,
-                self.apply_unit_prop,
+        # if not modifying formula, only apply pure literal once
+        self.apply_pure_literal()
+        funs = [self.apply_unit_prop,
                 self.decide]
         counter = 0
         while SATus is status.WORKING:
-            if counter % 3 == 0:
+            if counter % 2 == 0:
                 funs[0]()
-            elif counter % 3 == 1:
+            elif counter % 2 == 1:
                 funs[1]()
-            elif counter % 3 == 2:
-                funs[2]()
             counter +=1
             SATus = self.check_SATus() # backtracking is in here
 
     def check_SATus(self):
         # check for SAT or UNSAT
         # if pseudofail, backtrack and continue
-        # if real fal, report SATus as UNSAT
+        # if real fail, report SATus as UNSAT
         pass
 
+    def build_occurrence_stats(self):
+        # step through formula, create dictionary counting how many times a thing occurs
+        stats = dict(zip(range(-self.nvars,self.nvars+1),np.zeros((2*self.nvars+1)).astype(int))) # all literals and their negations
+        del stats[0] # delete entry for 0 because there is no variable 0
+        for clause in self.formula:
+            for variable in clause:
+                stats[variable] += 1
+        self.stats = stats # will not change unless we modify formula
+
     def apply_pure_literal(self):
-        pass
+        self.build_occurrence_stats() # builds self.stats
+        stats = self.stats
+        # see if each literal in formula is pure
+        # and not in  model yet
+        for clause in self.formula:
+            for variable in clause:
+                pure = stats[-variable] == 0
+                inmodel = self.check_if_in_model(variable)
+                neginmodel = self.check_if_in_model(-variable)
+                if pure and (not inmodel) and (not neginmodel):
+                    self.add_to_model(variable)
+
+    def add_to_model(self, variable):
+        self.model.append(variable)
+
+    def check_if_in_model(self, variable):
+        return (variable in self.model)
 
     def backtrack(self):
         pass
