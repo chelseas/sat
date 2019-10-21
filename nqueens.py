@@ -91,7 +91,5 @@ class n_queens():
             all_present_clauses.append(tuple(vars[i,:]))
         self.all_present_constraints = all_present_clauses
 
-    def clean_clauses(self):
-        # remove instances of A or notA
-        pass
+
 

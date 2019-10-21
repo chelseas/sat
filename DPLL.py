@@ -146,9 +146,10 @@ class DPLL():
         return self.nvars - len(self.model)
 
     def pick_unassigned(self):
-        # pick unassigned variable with most occurrences
+        # pick unassigned variable
+        # tried heuristics like pick one with most occurrences (or least)
         # so that we run into conflicts as fast as possible
-        # (could also pick some other heuristic)
+        # ultimately picking a random unassigned variable was best
         return self.get_random_unassigned()
 
     def get_most_frequent_unassigned(self):
