@@ -21,7 +21,7 @@ class DPLL():
     def solve(self):
         SATus = status.WORKING
         self.build_occurrence_stats()  # builds self.stats
-        # if not modifying formula, only apply pure literal once
+        # because modifying formula, only apply pure literal once
         self.apply_pure_literal()
         counter = 0
         dec_counter = 0
@@ -110,20 +110,25 @@ class DPLL():
     def backtrack(self):
         last_dec_var = self.decisions.pop() # take last decision and remove
         d_ind = self.model.index(last_dec_var) # get index in model
+        self.backtrack_model_dict(self.model[d_ind:])
         self.model = self.model[:d_ind] # keep part of model before last decision
-        self.model.append(-last_dec_var) # change decision
+        self.add_to_model(-last_dec_var) # change decision
         if self.testing:
             print("Backtracked. Changed ", last_dec_var, " to ", -last_dec_var,
                   ". Discarded ", self.nvars - d_ind - 1, " values.")
+
+    def backtrack_model_dict(self, values):
+        for v in values:
+            self.in_model_dict[v] = False
 
     def eval_clause(self, clause):
         # only for clauses or sub clauses which are fully defined in the model
         # evaluate truth value of clause or sub clause under the model
         status = False
         for v in clause:
-            v_in_m = v in self.model
+            v_in_m = self.in_model_dict[v]
             if self.testing:
-                nv_in_m = -v in self.model
+                nv_in_m = self.in_model_dict[-v]
                 assert(v_in_m or nv_in_m)
             status = status or v_in_m
         return status
@@ -172,10 +177,11 @@ class DPLL():
 
     def add_to_model(self, variable):
         self.model.append(variable)
+        self.in_model_dict[variable] = True
 
     def in_model(self, variable):
         # check if variable or its negation is in the model
-        return (variable in self.model) or (-variable in self.model)
+        return self.in_model_dict[variable] or self.in_model_dict[-variable]
 
     def parse_input(self, file):
         farray = open(file).read().split('\n')
@@ -200,6 +206,8 @@ class DPLL():
         self.formula = formula
         self.model = []
         self.decisions = []
+        self.in_model_dict = dict(zip(range(-self.nvars, self.nvars+1), np.zeros(2*self.nvars+1).astype(bool)))
+        del self.in_model_dict[0]
 
     def stripper(self, stringtuple):
         return [int(x) for x in stringtuple.split()][:-1] # drop final 0
