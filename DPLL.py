@@ -12,7 +12,8 @@ class DPLL():
         self.decisions = []  # list of var (integers)
         self.testing = True # make false for more performance
 
-    def run_solver(self, file):
+    def run_solver(self, file, testing=False):
+        self.testing = testing
         self.parse_input(file) # generates self.formula
         self.solve()
         print("SATus is : ", self.SATus)
@@ -23,10 +24,12 @@ class DPLL():
         # if not modifying formula, only apply pure literal once
         self.apply_pure_literal()
         counter = 0
+        dec_counter = 0
         keep_prop = False
         while SATus is status.WORKING:
             if not keep_prop:
                 self.decide()
+                dec_counter += 1
                 keep_prop = True
             else:
                 # propagate until there's nothing else to propagate
@@ -35,6 +38,8 @@ class DPLL():
             counter +=1
             SATus = self.check_SATus() # backtracking is in here
         self.SATus = SATus
+        self.counter = counter
+        self.dec_counter = dec_counter
 
     def check_SATus(self):
         # check for SAT or UNSAT
@@ -96,7 +101,6 @@ class DPLL():
         return None # if there was nothing to propagate, report that
 
     def try_backtrack(self):
-        import pdb; pdb.set_trace()
         if len(self.decisions) == 0:
             return status.UNSAT
         else:
@@ -140,7 +144,7 @@ class DPLL():
         # pick unassigned variable with most occurrences
         # so that we run into conflicts as fast as possible
         # (could also pick some other heuristic)
-        return self.get_most_frequent_unassigned()
+        return self.get_random_unassigned()
 
     def get_most_frequent_unassigned(self):
         unassigned = [k for k in self.stats.keys()
@@ -148,6 +152,18 @@ class DPLL():
         # sort by most frequently occurring
         sorted_unassigned = sorted(unassigned, key=self.stats.get, reverse=True)
         return sorted_unassigned[0] # return most frequent
+
+    def get_least_frequent_unassigned(self):
+        unassigned = [k for k in self.stats.keys()
+                      if (not self.in_model(k)) and (self.stats[k] > 0)]  # not in model but in formula
+        # sort by least frequently occurring
+        sorted_unassigned = sorted(unassigned, key=self.stats.get)
+        return sorted_unassigned[0]  # return most frequent
+
+    def get_random_unassigned(self):
+        unassigned = [k for k in self.stats.keys()
+                      if (not self.in_model(k)) and (self.stats[k] > 0)]  # not in model but in formula
+        return np.random.choice(unassigned)
 
     def mark_decision(self, var):
         self.decisions.append(var)
@@ -182,6 +198,8 @@ class DPLL():
         # strip empty clauses
         formula = [clause for clause in formula if len(clause)>0]
         self.formula = formula
+        self.model = []
+        self.decisions = []
 
     def stripper(self, stringtuple):
         return [int(x) for x in stringtuple.split()][:-1] # drop final 0
